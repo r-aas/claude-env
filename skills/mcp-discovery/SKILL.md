@@ -156,21 +156,141 @@ code ~/.claude/claude_desktop_config.json
 
 ### 3. Handle Credentials
 
-**Priority order:**
-1. Environment variables (best)
-2. Credential manager / keychain
-3. `.env` file (gitignored)
-4. Config file (least preferred)
+**IMPORTANT: Before asking the user for credentials, search for existing ones!**
 
-**Environment variable pattern:**
+#### Step 1: Check Current Environment
+
 ```bash
-# Add to ~/.zshrc or ~/.bashrc
-export JIRA_API_TOKEN="your-token"
-export CONFLUENCE_API_TOKEN="your-token"
-export SLACK_BOT_TOKEN="xoxb-..."
+# Check if var is already set
+echo $JIRA_API_TOKEN
+echo $ATLASSIAN_API_TOKEN
+echo $SLACK_BOT_TOKEN
+echo $GITHUB_TOKEN
 ```
 
-**Reference in config:**
+#### Step 2: Search Shell Config Files
+
+```bash
+# Search common shell configs for existing API keys/tokens
+grep -h "API_TOKEN\|API_KEY\|_TOKEN\|_SECRET" \
+  ~/.bashrc ~/.bash_profile ~/.zshrc ~/.zshenv ~/.profile 2>/dev/null | \
+  grep -v "^#" | head -20
+
+# Search for specific service
+grep -ri "JIRA\|ATLASSIAN" ~/.bashrc ~/.bash_profile ~/.zshrc ~/.zshenv 2>/dev/null
+grep -ri "SLACK" ~/.bashrc ~/.bash_profile ~/.zshrc ~/.zshenv 2>/dev/null
+grep -ri "GITHUB" ~/.bashrc ~/.bash_profile ~/.zshrc ~/.zshenv 2>/dev/null
+```
+
+#### Step 3: Search .env Files
+
+```bash
+# Find .env files in common locations
+find ~/code ~/work ~/projects ~ -maxdepth 3 -name ".env*" -type f 2>/dev/null | head -20
+
+# Search inside found .env files for specific keys
+find ~/code ~/work ~ -maxdepth 3 -name ".env*" -type f -exec grep -l "JIRA\|ATLASSIAN" {} \; 2>/dev/null
+find ~/code ~/work ~ -maxdepth 3 -name ".env*" -type f -exec grep -l "SLACK" {} \; 2>/dev/null
+
+# Read specific .env file (be careful not to expose in output)
+grep "ATLASSIAN" ~/code/myproject/.env 2>/dev/null
+```
+
+#### Step 4: Check Common Credential Locations
+
+```bash
+# macOS Keychain (list, don't show values)
+security find-generic-password -s "jira" 2>/dev/null && echo "Found Jira in Keychain"
+security find-generic-password -s "atlassian" 2>/dev/null && echo "Found Atlassian in Keychain"
+
+# 1Password CLI (if installed)
+op item list --categories "API Credential" 2>/dev/null | grep -i jira
+
+# Check for credential files
+ls -la ~/.config/*/credentials* 2>/dev/null
+ls -la ~/.aws/credentials 2>/dev/null
+```
+
+#### Step 5: If Credentials Not Found - Guide User
+
+If no existing credentials found, tell the user exactly how to get them:
+
+**Atlassian (Jira/Confluence):**
+```
+I couldn't find Atlassian credentials. Here's how to get them:
+
+1. Go to: https://id.atlassian.com/manage-profile/security/api-tokens
+2. Click "Create API token"
+3. Give it a label like "Claude MCP"
+4. Copy the token
+
+Then give me:
+- Your Atlassian email
+- Your domain (e.g., yourcompany.atlassian.net)
+- The API token you just created
+
+I'll add these to your ~/.zshrc (or ~/.bashrc) so they persist.
+```
+
+**Slack:**
+```
+I couldn't find a Slack bot token. Here's how to create one:
+
+1. Go to: https://api.slack.com/apps
+2. Click "Create New App" → "From scratch"
+3. Name it "Claude MCP" and select your workspace
+4. Go to "OAuth & Permissions"
+5. Add these Bot Token Scopes:
+   - channels:history
+   - channels:read
+   - chat:write
+   - users:read
+6. Click "Install to Workspace"
+7. Copy the "Bot User OAuth Token" (starts with xoxb-)
+
+Give me the token and I'll add it to your shell config.
+```
+
+**GitHub:**
+```
+I couldn't find a GitHub token. Here's how to create one:
+
+1. Go to: https://github.com/settings/tokens
+2. Click "Generate new token (classic)"
+3. Give it a note like "Claude MCP"
+4. Select scopes: repo, read:org, read:user
+5. Generate and copy the token
+
+Give me the token and I'll add it to your shell config.
+```
+
+#### Step 6: Add Credentials to Shell Config
+
+Once user provides credentials:
+
+```bash
+# Detect user's shell
+SHELL_CONFIG="$HOME/.zshrc"
+[ -f "$HOME/.bashrc" ] && [ ! -f "$HOME/.zshrc" ] && SHELL_CONFIG="$HOME/.bashrc"
+
+# Add credentials (append to file)
+cat >> "$SHELL_CONFIG" << 'EOF'
+
+# MCP Server Credentials (added by Claude)
+export ATLASSIAN_API_TOKEN="<token>"
+export ATLASSIAN_EMAIL="<email>"
+export ATLASSIAN_DOMAIN="<domain>"
+EOF
+
+echo "Added to $SHELL_CONFIG - run 'source $SHELL_CONFIG' or restart terminal"
+```
+
+**Priority order for storing credentials:**
+1. Environment variables in shell config (best - persists, works everywhere)
+2. `.env` file in project (if project-specific)
+3. Direct in MCP config (least preferred - visible in config file)
+
+**Reference in MCP config:**
 ```json
 {
   "env": {
@@ -215,8 +335,15 @@ npx -y <package-name> 2>&1
 
 ### Jira/Confluence (Atlassian)
 
+**First, search for existing credentials:**
 ```bash
-# Get API token: https://id.atlassian.com/manage-profile/security/api-tokens
+grep -ri "ATLASSIAN" ~/.bashrc ~/.zshrc ~/.zshenv 2>/dev/null
+find ~/code ~/work -maxdepth 3 -name ".env*" -exec grep -l "ATLASSIAN" {} \; 2>/dev/null
+```
+
+**If not found, get new token:** https://id.atlassian.com/manage-profile/security/api-tokens
+
+```bash
 export ATLASSIAN_API_TOKEN="your-token"
 export ATLASSIAN_EMAIL="your-email@company.com"
 export ATLASSIAN_DOMAIN="yourcompany.atlassian.net"
@@ -240,9 +367,16 @@ export ATLASSIAN_DOMAIN="yourcompany.atlassian.net"
 
 ### Slack
 
+**First, search for existing credentials:**
 ```bash
-# Create Slack app: https://api.slack.com/apps
-# Add Bot Token Scopes: channels:history, channels:read, chat:write, users:read
+grep -ri "SLACK" ~/.bashrc ~/.zshrc ~/.zshenv 2>/dev/null
+find ~/code ~/work -maxdepth 3 -name ".env*" -exec grep -l "SLACK" {} \; 2>/dev/null
+```
+
+**If not found, create Slack app:** https://api.slack.com/apps
+- Add Bot Token Scopes: channels:history, channels:read, chat:write, users:read
+
+```bash
 export SLACK_BOT_TOKEN="xoxb-..."
 ```
 
@@ -274,6 +408,14 @@ export SLACK_BOT_TOKEN="xoxb-..."
 ```
 
 ### GitHub
+
+**First, search for existing credentials:**
+```bash
+grep -ri "GITHUB_TOKEN\|GH_TOKEN" ~/.bashrc ~/.zshrc ~/.zshenv 2>/dev/null
+gh auth token 2>/dev/null  # If gh CLI is authenticated
+```
+
+**If not found, create token:** https://github.com/settings/tokens
 
 ```bash
 export GITHUB_TOKEN="ghp_..."
