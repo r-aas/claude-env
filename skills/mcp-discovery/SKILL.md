@@ -503,6 +503,43 @@ When you notice the user doing these things repeatedly, suggest MCP:
 "args": ["-y", "package-name@1.2.3"]
 ```
 
+## Advanced: mcp-use Framework
+
+For power users who want programmatic MCP access outside Claude Code, [mcp-use](https://github.com/mcp-use/mcp-use) provides a full-stack MCP framework:
+
+```python
+# pip install mcp-use langchain-openai
+from langchain_openai import ChatOpenAI
+from mcp_use import MCPAgent, MCPClient
+
+config = {
+    "mcpServers": {
+        "filesystem": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+        }
+    }
+}
+
+client = MCPClient.from_dict(config)
+llm = ChatOpenAI(model="gpt-4o")
+agent = MCPAgent(llm=llm, client=client)
+
+result = await agent.run("List all files in the directory")
+```
+
+**Features:**
+- 🤖 Build custom AI agents with MCP tool access
+- 🔌 Connect any LLM to any MCP server
+- 🛠️ Create your own MCP servers
+- 🔍 Built-in web inspector for debugging
+- 📡 Streaming responses, multi-server support
+
+**Use cases:**
+- Custom automation scripts that need MCP tools
+- Building your own AI assistant with specific MCP servers
+- Testing MCP servers before adding to Claude Code
+
 ## Security Checklist
 
 Before installing any MCP server:
