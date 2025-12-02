@@ -1,0 +1,61 @@
+version: '3'
+
+vars:
+  INSTALL_DIR: "{{.HOME}}/.claude"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  install:
+    desc: Run install script locally
+    cmds:
+      - ./install.sh
+
+  test:
+    desc: Test Claude Code sees the skills
+    cmds:
+      - |
+        echo "Testing Claude Code skill detection..."
+        claude -p "List all the skills you have access to. Just output the skill names, one per line." --allowedTools "" 2>/dev/null || echo "Error: claude command not found. Install Claude Code first."
+
+  test:count:
+    desc: Quick test - count skills Claude sees
+    cmds:
+      - |
+        echo "Checking skill count..."
+        SKILL_COUNT=$(ls -d {{.INSTALL_DIR}}/skills/*/ 2>/dev/null | wc -l | tr -d ' ')
+        echo "Skills in {{.INSTALL_DIR}}/skills/: $SKILL_COUNT"
+
+        if [ "$SKILL_COUNT" -gt 0 ]; then
+          echo "Skills found:"
+          ls -1 {{.INSTALL_DIR}}/skills/ | head -10
+          [ "$SKILL_COUNT" -gt 10 ] && echo "... and $((SKILL_COUNT - 10)) more"
+        fi
+
+  list:
+    desc: List installed skills
+    cmds:
+      - ls -1 {{.INSTALL_DIR}}/skills/
+
+  update:
+    desc: Pull latest from origin
+    cmds:
+      - cd {{.INSTALL_DIR}} && git pull --rebase origin main
+
+  status:
+    desc: Show install status
+    cmds:
+      - |
+        echo "Install directory: {{.INSTALL_DIR}}"
+        if [ -d "{{.INSTALL_DIR}}/.git" ]; then
+          echo "Status: Installed (git repo)"
+          echo "Remote: $(cd {{.INSTALL_DIR}} && git remote get-url origin)"
+          echo "Branch: $(cd {{.INSTALL_DIR}} && git branch --show-current)"
+          echo "Skills: $(ls -d {{.INSTALL_DIR}}/skills/*/ 2>/dev/null | wc -l | tr -d ' ')"
+          echo "Private skills: $(ls -d {{.INSTALL_DIR}}/skills/private-*/ 2>/dev/null | wc -l | tr -d ' ')"
+        else
+          echo "Status: Not installed"
+        fi
