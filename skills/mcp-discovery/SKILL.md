@@ -67,18 +67,29 @@ gh search repos "<tool> mcp" --sort=stars
 
 **Common Integrations:**
 
-| Tool | Recommended Server | Notes |
-|------|-------------------|-------|
-| Jira | `mcp-server-atlassian` | Covers Jira + Confluence |
-| Confluence | `mcp-server-atlassian` | Same as Jira |
-| Slack | `mcp-server-slack` | Official |
-| GitHub | `mcp-server-github` | Official |
-| PostgreSQL | `mcp-server-postgres` | Official |
-| Filesystem | `mcp-server-filesystem` | Official |
-| Git | `mcp-server-git` | Official |
-| Google Drive | `mcp-server-gdrive` | OAuth setup required |
-| Linear | `mcp-server-linear` | Issue tracking |
-| Notion | `mcp-server-notion` | Note-taking |
+| Tool | Package | Notes |
+|------|---------|-------|
+| Jira | `@aashari/mcp-server-atlassian-jira` | Best Jira integration |
+| Confluence | `@aashari/mcp-server-atlassian-confluence` | Auto-converts formats |
+| Slack | `korotovsky/slack-mcp-server` | Most powerful Slack MCP |
+| GitHub | `@modelcontextprotocol/server-github` | Official |
+| PostgreSQL | `@modelcontextprotocol/server-postgres` | Official |
+| SQLite | `@modelcontextprotocol/server-sqlite` | Official |
+| Filesystem | `@modelcontextprotocol/server-filesystem` | Official |
+| Git | `@modelcontextprotocol/server-git` | Official |
+| Supabase | `@supabase-community/supabase-mcp` | Database + Auth |
+| Redis | `@redis/mcp-redis` | Official Redis MCP |
+| Linear | `linear-mcp-server` | Issue tracking |
+| Notion | `notion-mcp-server` | Note-taking |
+| MS 365 | `@softeria/ms-365-mcp-server` | Outlook, Teams, etc. |
+
+**Meta-servers (manage multiple MCPs):**
+
+| Tool | Package | Notes |
+|------|---------|-------|
+| Magg | `magg` (uvx) | **Hot-reload!** Claude adds MCPs at runtime |
+| MetaMCP | `metatool-app` | GUI manager with namespaces |
+| 1MCP | `@1mcp/agent` | Aggregates multiple servers |
 
 ## Installation Workflow
 
@@ -301,11 +312,48 @@ echo "Added to $SHELL_CONFIG - run 'source $SHELL_CONFIG' or restart terminal"
 
 ## Testing MCP Servers
 
-### Important: Restart Required (But You Can Resume!)
+### Option 1: Hot-Reload with Magg (Recommended)
 
-**Claude Code must be restarted to load new MCP servers.** The config is read at startup.
+Use [magg](https://github.com/sitbon/magg) - a meta-MCP server that enables **hot-reload without restarting Claude**:
 
-**Good news:** Use `--continue` to pick up where you left off after restart:
+```bash
+# Install magg
+uvx magg --init  # Creates config at ~/.config/magg/config.yaml
+```
+
+Configure Claude to use magg as a single MCP server:
+```json
+{
+  "mcpServers": {
+    "magg": {
+      "command": "uvx",
+      "args": ["magg"]
+    }
+  }
+}
+```
+
+Now Claude can **dynamically add MCP servers at runtime**:
+- `magg_search_servers` - Search for available MCP servers
+- `magg_add_server` - Add new servers without restarting
+- `magg_smart_configure` - Auto-configure from just a URL
+- `magg_reload_config` - Reload config on the fly
+
+**No more restarts!** Claude manages its own MCP servers.
+
+### Option 2: MetaMCP (GUI Manager)
+
+[MetaMCP](https://github.com/metatool-ai/metatool-app) provides a GUI for managing MCP servers:
+- Namespace grouping for multiple servers
+- Enable/disable servers without code changes
+- Built-in inspector for testing
+- OAuth and API key management
+
+### Option 3: Standard Config (Requires Restart)
+
+If not using magg/MetaMCP, Claude Code must restart to load new MCP servers.
+
+**Use `--continue` to pick up where you left off:**
 
 ```bash
 # After adding MCP config, restart and continue conversation
@@ -314,25 +362,14 @@ claude --continue
 claude --resume
 ```
 
-**Pro tip:** Install [claude-continue](https://github.com/dammyaro/claude-continue) slash commands for even smoother resumption:
+**Pro tip:** Install [claude-continue](https://github.com/dammyaro/claude-continue) slash commands:
 - `/continue` - Analyzes git status, recent commits, TODOs to suggest next steps
-- `/continue-pr` - Focuses on PR progress, feedback, CI/CD issues
 - `/morning` - Daily catch-up routine with prioritized task list
 
-**To minimize restarts:**
-1. Check if server is already configured before adding
-2. Batch multiple MCP server installs in one session
-3. Add all servers, THEN restart once with `--continue`
-
-```bash
-# Check if server already configured (no restart needed if present)
-cat ~/.claude/claude_desktop_config.json 2>/dev/null | jq -e '.mcpServers["atlassian"]' && echo "Already configured!"
-```
-
-**Alternative: Use `claude mcp` commands:**
+**Use `claude mcp` commands:**
 ```bash
 # Add MCP server via CLI (still requires restart)
-claude mcp add atlassian -- npx -y @anthropic/mcp-server-atlassian
+claude mcp add atlassian -- npx -y @modelcontextprotocol/server-atlassian
 
 # List configured servers
 claude mcp list
