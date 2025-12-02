@@ -225,12 +225,6 @@ Skills are in `~/.claude/skills/`. They provide specialized knowledge that Claud
 |-------|---------|
 | `e2e-testing-patterns` | End-to-end testing (Playwright/Cypress) |
 
-### Private Skills (gitignored)
-| Skill | Purpose |
-|-------|---------|
-| `private-homelab-ops` | Personal homelab k3d platform |
-| `private-suno-songwriting` | AI music composition (R the Architect) |
-
 ### Other
 | Skill | Purpose |
 |-------|---------|
@@ -245,9 +239,4 @@ Skills are in `~/.claude/skills/`. They provide specialized knowledge that Claud
 ---
 
 ## Changelog
-- 2025-12-01: Skill audit - consolidated 37 → 28 skills. Merged duplicates, deleted Metabase-specific skills.
-- 2025-12-01: Major refactor - moved homelab-specific content to `homelab-ops` skill, ARM64 gotchas to `apple-silicon-dev` skill. CLAUDE.md now project-agnostic.
-- 2025-12-01: Created skill-evolution, k8s-troubleshooting, mcp-development skills.
-- 2025-12-01: Created github-research skill for reference repo workflows.
-- 2025-12-01: Installed 33 skills from Anthropic, wshobson, Metabase, SkillsMP.
-- 2025-12-01: Added SkillsMP API integration (task smp:*).
+- 2025-12-01: Initial public release with 28 skills.
