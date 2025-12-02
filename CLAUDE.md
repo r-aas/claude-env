@@ -209,6 +209,7 @@ Skills are in `~/.claude/skills/`. They provide specialized knowledge that Claud
 | `terraform-module-library` | Terraform patterns |
 | `github-actions-templates` | CI/CD workflows |
 | `mcp-development` | Build MCP servers (FastMCP + TypeScript) |
+| `mcp-discovery` | Find & install MCP servers for external tools |
 
 ### Platform-Specific
 | Skill | Purpose |
