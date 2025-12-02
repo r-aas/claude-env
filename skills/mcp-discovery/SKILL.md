@@ -301,18 +301,44 @@ echo "Added to $SHELL_CONFIG - run 'source $SHELL_CONFIG' or restart terminal"
 
 ## Testing MCP Servers
 
-### Important: Restart Required
+### Important: Restart Required (But You Can Resume!)
 
 **Claude Code must be restarted to load new MCP servers.** The config is read at startup.
+
+**Good news:** Use `--continue` to pick up where you left off after restart:
+
+```bash
+# After adding MCP config, restart and continue conversation
+claude --continue
+# Or resume a specific session (interactive picker)
+claude --resume
+```
+
+**Pro tip:** Install [claude-continue](https://github.com/dammyaro/claude-continue) slash commands for even smoother resumption:
+- `/continue` - Analyzes git status, recent commits, TODOs to suggest next steps
+- `/continue-pr` - Focuses on PR progress, feedback, CI/CD issues
+- `/morning` - Daily catch-up routine with prioritized task list
 
 **To minimize restarts:**
 1. Check if server is already configured before adding
 2. Batch multiple MCP server installs in one session
-3. Add all servers, THEN restart once
+3. Add all servers, THEN restart once with `--continue`
 
 ```bash
 # Check if server already configured (no restart needed if present)
 cat ~/.claude/claude_desktop_config.json 2>/dev/null | jq -e '.mcpServers["atlassian"]' && echo "Already configured!"
+```
+
+**Alternative: Use `claude mcp` commands:**
+```bash
+# Add MCP server via CLI (still requires restart)
+claude mcp add atlassian -- npx -y @anthropic/mcp-server-atlassian
+
+# List configured servers
+claude mcp list
+
+# Remove a server
+claude mcp remove atlassian
 ```
 
 ### 1. Pre-flight: Test Server Before Adding to Config
