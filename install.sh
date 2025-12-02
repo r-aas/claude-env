@@ -53,28 +53,14 @@ echo "Dependencies OK."
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Get user's fork URL (fork if needed)
-# ─────────────────────────────────────────────────────────────────────────────
-
-get_fork_url() {
-    local username
-    username=$(gh api user --jq '.login')
-
-    # Check if user already has a fork
-    if gh repo view "$username/claude-env" &> /dev/null; then
-        echo "https://github.com/$username/claude-env.git"
-    else
-        echo "Forking $UPSTREAM_REPO to your account..." >&2
-        gh repo fork "$UPSTREAM_REPO" --clone=false >&2
-        echo "https://github.com/$username/claude-env.git"
-    fi
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Install
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo "Installing Claude Env..."
+
+# Get GitHub username
+GH_USER=$(gh api user --jq '.login')
+echo "GitHub user: $GH_USER"
 
 # Backup existing private skills if they exist
 if [ -d "$INSTALL_DIR/skills" ]; then
@@ -96,8 +82,13 @@ if [ -d "$INSTALL_DIR/.git" ]; then
 else
     echo "Fresh install..."
 
-    # Get fork URL (creates fork if needed)
-    REPO_URL=$(get_fork_url)
+    # Fork if user doesn't have one yet
+    if ! gh repo view "$GH_USER/claude-env" &> /dev/null; then
+        echo "Forking $UPSTREAM_REPO to your account..."
+        gh repo fork "$UPSTREAM_REPO" --clone=false
+    fi
+
+    REPO_URL="https://github.com/$GH_USER/claude-env.git"
     echo "Using repo: $REPO_URL"
 
     if [ -d "$INSTALL_DIR" ]; then
