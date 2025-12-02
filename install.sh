@@ -23,44 +23,38 @@ check_command() {
                 echo "  Ubuntu: sudo apt install git"
                 echo "  Windows: https://git-scm.com/downloads"
                 ;;
-            gh)
-                echo "Install GitHub CLI:"
-                echo "  macOS:  brew install gh"
-                echo "  Ubuntu: https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
-                echo "  Windows: winget install GitHub.cli"
-                echo ""
-                echo "Then authenticate: gh auth login"
-                ;;
         esac
-        exit 1
-    fi
-}
-
-check_gh_auth() {
-    if ! gh auth status &> /dev/null; then
-        echo "Error: GitHub CLI not authenticated."
-        echo ""
-        echo "Run: gh auth login"
         exit 1
     fi
 }
 
 echo "Checking dependencies..."
 check_command git
-check_command gh
-check_gh_auth
 echo "Dependencies OK."
 echo ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Detect git protocol preference (SSH vs HTTPS)
+# ─────────────────────────────────────────────────────────────────────────────
+
+if command -v gh &> /dev/null; then
+    GH_PROTOCOL=$(gh config get git_protocol 2>/dev/null || echo "https")
+else
+    GH_PROTOCOL="https"
+fi
+
+if [ "$GH_PROTOCOL" = "ssh" ]; then
+    REPO_URL="git@github.com:${UPSTREAM_REPO}.git"
+else
+    REPO_URL="https://github.com/${UPSTREAM_REPO}.git"
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Install
 # ─────────────────────────────────────────────────────────────────────────────
 
 echo "Installing Claude Env..."
-
-# Get GitHub username
-GH_USER=$(gh api user --jq '.login')
-echo "GitHub user: $GH_USER"
+echo "Git protocol: $GH_PROTOCOL"
 
 # Backup existing private skills if they exist
 if [ -d "$INSTALL_DIR/skills" ]; then
@@ -81,15 +75,7 @@ if [ -d "$INSTALL_DIR/.git" ]; then
     git pull --rebase origin main
 else
     echo "Fresh install..."
-
-    # Fork if user doesn't have one yet
-    if ! gh repo view "$GH_USER/claude-env" &> /dev/null; then
-        echo "Forking $UPSTREAM_REPO to your account..."
-        gh repo fork "$UPSTREAM_REPO" --clone=false
-    fi
-
-    REPO_URL="https://github.com/$GH_USER/claude-env.git"
-    echo "Using repo: $REPO_URL"
+    echo "Cloning from: $REPO_URL"
 
     if [ -d "$INSTALL_DIR" ]; then
         # Move existing files to backup
@@ -99,10 +85,6 @@ else
     fi
 
     git clone "$REPO_URL" "$INSTALL_DIR"
-
-    # Add upstream remote for pulling updates
-    cd "$INSTALL_DIR"
-    git remote add upstream "https://github.com/$UPSTREAM_REPO.git" 2>/dev/null || true
 fi
 
 # Restore private skills from backup
