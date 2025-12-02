@@ -1,0 +1,14 @@
+# Private skills (contain personal info, project-specific details, or secrets)
+skills/private-*/
+
+# Local overrides
+*.local
+*.local.md
+
+# Secrets
+.env
+*.secret
+credentials/
+
+# OS files
+.DS_Store
