@@ -301,20 +301,39 @@ echo "Added to $SHELL_CONFIG - run 'source $SHELL_CONFIG' or restart terminal"
 
 ## Testing MCP Servers
 
-### 1. Verify Server Starts
+### Important: Restart Required
+
+**Claude Code must be restarted to load new MCP servers.** The config is read at startup.
+
+**To minimize restarts:**
+1. Check if server is already configured before adding
+2. Batch multiple MCP server installs in one session
+3. Add all servers, THEN restart once
 
 ```bash
-# Test npx server directly
-npx -y <package-name> --help
+# Check if server already configured (no restart needed if present)
+cat ~/.claude/claude_desktop_config.json 2>/dev/null | jq -e '.mcpServers["atlassian"]' && echo "Already configured!"
+```
+
+### 1. Pre-flight: Test Server Before Adding to Config
+
+Test the server works BEFORE adding to config (avoids restart cycles):
+
+```bash
+# Test npx server directly with credentials
+ATLASSIAN_API_TOKEN="xxx" ATLASSIAN_EMAIL="you@co.com" ATLASSIAN_DOMAIN="co.atlassian.net" \
+  npx -y @anthropic/mcp-server-atlassian
 
 # Test uvx server
-uvx <package-name> --help
+GITHUB_TOKEN="ghp_xxx" uvx mcp-server-github
 ```
+
+If it starts without errors, it's safe to add to config.
 
 ### 2. Test in Claude Code
 
 After adding to config:
-1. Restart Claude Code
+1. **Restart Claude Code** (required - no way around this currently)
 2. Ask: "What MCP tools do you have access to?"
 3. Try a simple operation: "List my Jira projects"
 
