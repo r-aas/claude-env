@@ -166,6 +166,100 @@ story.append(Paragraph("Content for page 2", styles['Normal']))
 doc.build(story)
 ```
 
+### reportlab - Professional Document Layout
+
+#### Two-Column Layout with Tables
+```python
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, HRFlowable, Spacer
+from reportlab.lib import colors
+
+PAGE_WIDTH, PAGE_HEIGHT = letter
+
+doc = SimpleDocTemplate(
+    "document.pdf",
+    pagesize=letter,
+    leftMargin=0.75 * inch,
+    rightMargin=0.75 * inch,
+    topMargin=0.5 * inch,
+    bottomMargin=0.5 * inch
+)
+
+# Define reusable styles
+styles = {
+    'heading': ParagraphStyle(
+        'Heading',
+        fontName='Helvetica-Bold',
+        fontSize=12,
+        leading=14,
+        spaceBefore=8,  # Space between sections
+        spaceAfter=1,
+    ),
+    'body': ParagraphStyle(
+        'Body',
+        fontName='Helvetica',
+        fontSize=9,       # 9-10pt is readable
+        leading=11,       # ~1.2x font size
+    ),
+}
+
+# Two-column data
+items = [
+    ("Item One", "Detail A"),
+    ("Item Two", "Detail B"),
+    ("Item Three", "Detail C"),
+    ("Item Four", "Detail D"),
+]
+
+# Build two-column table
+table_data = []
+for i in range(0, len(items), 2):
+    row = []
+    row.append(Paragraph(f"<b>{items[i][0]}</b><br/><i>{items[i][1]}</i>", styles['body']))
+    if i + 1 < len(items):
+        row.append(Paragraph(f"<b>{items[i+1][0]}</b><br/><i>{items[i+1][1]}</i>", styles['body']))
+    else:
+        row.append("")
+    table_data.append(row)
+
+# IMPORTANT: Calculate available width from page width minus margins
+available_width = PAGE_WIDTH - 1.5 * inch  # 0.75" left + 0.75" right
+table = Table(table_data, colWidths=[available_width / 2, available_width / 2])
+table.setStyle(TableStyle([
+    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ('LEFTPADDING', (0, 0), (-1, -1), 6),
+    ('LEFTPADDING', (0, 0), (0, -1), 0),  # First column flush left
+    ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+    ('TOPPADDING', (0, 0), (-1, -1), 2),
+    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+]))
+table.hAlign = 'LEFT'  # CRITICAL: Align table with body text
+```
+
+#### Key reportlab Gotchas
+
+1. **Table alignment**: Tables default to center. Use `table.hAlign = 'LEFT'` to align with body text.
+
+2. **Column width calculation**: Account for both margins:
+   ```python
+   available_width = PAGE_WIDTH - (leftMargin + rightMargin)
+   ```
+
+3. **TableStyle order matters**: Later rules override earlier ones for same cells.
+
+4. **Fitting content to one page**:
+   - Adjust font size (9-10pt body is readable) rather than squeezing margins
+   - Leading (line height) = ~1.2x font size
+   - `spaceBefore` on headings creates hierarchy but uses vertical space
+
+5. **Inline formatting**: Use `<b>`, `<i>`, `<br/>` tags in Paragraph text.
+
+6. **Section dividers**: `HRFlowable(width="100%", thickness=0.5, color=colors.gray)`
+
+7. **Explicit spacing**: `Spacer(1, 6)` for vertical gaps between items.
+
 ## Command-Line Tools
 
 ### pdftotext (poppler-utils)
