@@ -64,8 +64,8 @@ get_fork_url() {
     if gh repo view "$username/claude-env" &> /dev/null; then
         echo "https://github.com/$username/claude-env.git"
     else
-        echo "Forking $UPSTREAM_REPO to your account..."
-        gh repo fork "$UPSTREAM_REPO" --clone=false
+        echo "Forking $UPSTREAM_REPO to your account..." >&2
+        gh repo fork "$UPSTREAM_REPO" --clone=false >&2
         echo "https://github.com/$username/claude-env.git"
     fi
 }
